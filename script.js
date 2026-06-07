@@ -14,6 +14,7 @@ const menuEl = document.getElementById("menu");
 const uploadItem = document.getElementById("uploadItem");
 const folderItem = document.getElementById("folderItem");
 const removeItem = document.getElementById("removeItem");
+const percentLeftEl = document.getElementById("percentLeft");
 
 /* ============================================================
    Live time / countdown + single pill bar
@@ -57,6 +58,10 @@ function updateTime() {
 	const elapsedPercent = (elapsedMs / dayMs) * 100;
 	barFillEl.style.width = `${elapsedPercent}%`;
 	barEl.setAttribute("aria-valuenow", elapsedPercent.toFixed(1));
+
+	// Percent left display.
+	const remainingPercent = Math.max(0, 100 - elapsedPercent);
+	percentLeftEl.textContent = `${remainingPercent.toFixed(1)}% left`;
 }
 
 updateTime();
@@ -66,6 +71,8 @@ setInterval(updateTime, 1000);
    Starfield
    ============================================================ */
 function renderStarfield() {
+	document.body.classList.remove("has-wallpaper");
+	document.body.style.removeProperty("--wallpaper");
 	starfieldEl.style.display = "block";
 	starfieldEl.innerHTML = "";
 
@@ -473,9 +480,8 @@ async function loadWallpaper() {
 			return;
 		}
 
-		document.body.style.backgroundImage = `url("${dataUrl}")`;
-		document.body.style.backgroundSize = "cover";
-		document.body.style.backgroundPosition = "center";
+		document.body.style.setProperty("--wallpaper", `url("${dataUrl}")`);
+		document.body.classList.add("has-wallpaper");
 		starfieldEl.style.display = "none";
 		// Run extractor to compute text/fill colors (async). After extractor
 		// completes we override the image filter vars so the wallpaper stays

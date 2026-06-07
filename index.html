@@ -11,24 +11,29 @@
 		<title>Day Progress</title>
 		<link rel="stylesheet" href="style.css" />
 	</head>
+
 	<body>
 		<div id="starfield" class="starfield" aria-hidden="true"></div>
 		<div id="scrim" class="scrim" aria-hidden="true"></div>
+		<div class="background-overlay" aria-hidden="true"></div>
 
-		<main class="content">
-			<h1 id="percent" class="percent">00:00</h1>
-			<p id="countdown" class="countdown">24 hours left today</p>
+		<main class="dashboard-widget">
+			<h1 id="percent" class="time-display">00:00</h1>
+			<p id="countdown" class="progress-text">24 hours left today</p>
 
-			<div
-				id="bar"
-				class="bar"
-				role="progressbar"
-				aria-label="Progress through the day"
-				aria-valuemin="0"
-				aria-valuemax="100"
-				aria-valuenow="0"
-			>
-				<div id="barFill" class="bar-fill"></div>
+			<div class="progress-row">
+				<div
+					id="bar"
+					class="progress-bar-container"
+					role="progressbar"
+					aria-label="Progress through the day"
+					aria-valuemin="0"
+					aria-valuemax="100"
+					aria-valuenow="0"
+				>
+					<div id="barFill" class="progress-bar-fill"></div>
+				</div>
+				<span id="percentLeft" class="percent-left-text">0.0% left</span>
 			</div>
 		</main>
 

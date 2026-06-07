@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap");
+
 :root {
 	--bg: #0c0c0c;
 	--text: #f4f4f5;
@@ -26,33 +28,20 @@ html {
 body {
 	min-height: 100vh;
 	display: flex;
-	align-items: flex-end;
+	align-items: center;
 	justify-content: center;
 	background-color: var(--bg);
 	background-repeat: no-repeat;
 	background-size: cover;
 	background-position: center;
 	color: var(--text);
-	font-family: Consolas, "SF Mono", Menlo, Monaco, "Courier New", monospace;
+	font-family:
+		"Inter",
+		system-ui,
+		-apple-system,
+		sans-serif;
 	overflow: hidden;
 	transition: color 0.5s ease;
-	position: relative;
-}
-
-body::after {
-	content: "";
-	position: fixed;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	height: 50%;
-	background: linear-gradient(
-		to bottom,
-		transparent 0%,
-		rgba(0, 0, 0, 0.5) 100%
-	);
-	pointer-events: none;
-	z-index: 0.5;
 }
 
 /* Wallpaper lives on a pseudo element so filters never touch the UI. */
@@ -116,107 +105,97 @@ body.has-wallpaper::before {
 	opacity: 0.25;
 }
 
-/* Content */
-.content {
-	position: relative;
-	z-index: 2;
-	width: 100%;
-	max-width: 420px;
-	padding: 2.5rem 2rem;
+/* Background overlay gradient for contrast */
+.background-overlay {
+	position: fixed;
+	inset: 0;
+	background: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0.45) 0%,
+		rgba(0, 0, 0, 0) 40%
+	);
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* Dashboard Widget */
+.dashboard-widget {
+	position: fixed;
+	bottom: 50px;
+	left: 50px;
 	display: flex;
 	flex-direction: column;
-	align-items: center;
-	text-align: center;
-	gap: 2.5rem;
-	margin-bottom: 3rem;
-	background: rgba(12, 12, 12, 0.5);
-	backdrop-filter: blur(12px);
-	border-radius: 16px;
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+	align-items: flex-start;
+	gap: 12px;
+	font-family:
+		"Inter",
+		system-ui,
+		-apple-system,
+		sans-serif;
+	z-index: 10;
 }
 
-.percent {
-	font-size: clamp(2.2rem, 8vw, 3.5rem);
+.time-display {
+	font-size: 4.5rem;
 	font-weight: 700;
-	line-height: 1.1;
-	letter-spacing: -0.01em;
-	text-wrap: balance;
-	color: var(--text);
-	text-shadow: none;
+	line-height: 1;
+	color: var(--text, #ffffff);
+	letter-spacing: -0.03em;
+	text-shadow: var(--text-shadow);
+	/* Subtle drop shadow just to protect against pure white backgrounds */
+	filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
 	transition: color 0.5s ease;
 }
 
-.countdown {
-	font-size: clamp(0.95rem, 3vw, 1.1rem);
-	font-weight: 400;
-	color: rgba(255, 255, 255, 0.8);
-	text-wrap: pretty;
-	text-shadow: none;
+.progress-text {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--subtle, rgba(255, 255, 255, 0.6));
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	text-shadow: var(--text-shadow);
 	transition: color 0.5s ease;
 }
 
-/* Day progress rail */
-.bar {
-	width: 100%;
-	height: 14px;
-	margin-top: 0.5rem;
-	border-radius: 999px;
-	background:
-		repeating-linear-gradient(
-			90deg,
-			transparent 0,
-			transparent 14px,
-			rgba(255, 255, 255, 0.06) 14px,
-			rgba(255, 255, 255, 0.06) 15px
-		),
-		var(--track);
-	box-shadow:
-		inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-		0 8px 24px rgba(0, 0, 0, 0.12);
-	overflow: visible;
-	transition: background 0.5s ease;
+.progress-row {
+	display: flex;
+	align-items: center;
+	gap: 14px;
 }
 
-.bar-fill {
-	position: relative;
+.percent-left-text {
+	font-size: 0.8125rem;
+	font-weight: 500;
+	color: var(--subtle, rgba(255, 255, 255, 0.6));
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	text-shadow: var(--text-shadow);
+	white-space: nowrap;
+	transition: color 0.5s ease;
+}
+
+.progress-bar-container {
+	width: 280px;
+	height: 6px;
+	background: var(--track, rgba(255, 255, 255, 0.15));
+	border-radius: 10px;
+	overflow: hidden;
+	backdrop-filter: blur(4px);
+}
+
+.progress-bar-fill {
 	height: 100%;
-	width: 0%;
-	border-radius: 999px;
-	background: linear-gradient(
-		90deg,
-		color-mix(in srgb, var(--fill) 82%, white 18%),
-		var(--fill)
-	);
-	box-shadow:
-		0 0 18px color-mix(in srgb, var(--fill) 60%, transparent),
-		0 0 2px rgba(255, 255, 255, 0.2);
-	transition:
-		width 0.5s linear,
-		background 0.5s ease;
+	background: var(--fill, #ffffff);
+	border-radius: 10px;
+	/* Clean transition when the time updates */
+	transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.bar-fill::after {
-	content: "";
-	position: absolute;
-	right: -7px;
-	top: 50%;
-	width: 14px;
-	height: 14px;
-	transform: translateY(-50%);
-	border-radius: 50%;
-	background: var(--fill);
-	box-shadow:
-		0 0 0 3px rgba(255, 255, 255, 0.12),
-		0 0 16px color-mix(in srgb, var(--fill) 72%, transparent);
-	pointer-events: none;
-}
-
-/* Gear button (bottom-left) */
+/* Gear button (bottom-right) */
 .gear-btn {
 	position: fixed;
 	bottom: 20px;
-	left: 20px;
+	right: 20px;
 	font-size: 1.2rem;
 	opacity: 0.4;
 	transition: opacity 0.2s ease;
@@ -238,7 +217,7 @@ body.has-wallpaper::before {
 .menu {
 	position: fixed;
 	bottom: 56px;
-	left: 20px;
+	right: 20px;
 	z-index: 20;
 	display: flex;
 	flex-direction: column;
