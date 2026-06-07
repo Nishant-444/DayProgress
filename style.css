@@ -26,7 +26,7 @@ html {
 body {
 	min-height: 100vh;
 	display: flex;
-	align-items: center;
+	align-items: flex-end;
 	justify-content: center;
 	background-color: var(--bg);
 	background-repeat: no-repeat;
@@ -36,6 +36,23 @@ body {
 	font-family: Consolas, "SF Mono", Menlo, Monaco, "Courier New", monospace;
 	overflow: hidden;
 	transition: color 0.5s ease;
+	position: relative;
+}
+
+body::after {
+	content: "";
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 50%;
+	background: linear-gradient(
+		to bottom,
+		transparent 0%,
+		rgba(0, 0, 0, 0.5) 100%
+	);
+	pointer-events: none;
+	z-index: 0.5;
 }
 
 /* Wallpaper lives on a pseudo element so filters never touch the UI. */
@@ -102,33 +119,40 @@ body.has-wallpaper::before {
 /* Content */
 .content {
 	position: relative;
-	z-index: 1;
+	z-index: 2;
 	width: 100%;
-	max-width: 900px;
-	padding: 2rem;
+	max-width: 420px;
+	padding: 2.5rem 2rem;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	text-align: center;
-	gap: 1.5rem;
+	gap: 2.5rem;
+	margin-bottom: 3rem;
+	background: rgba(12, 12, 12, 0.5);
+	backdrop-filter: blur(12px);
+	border-radius: 16px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .percent {
-	font-size: clamp(2.5rem, 10vw, 6rem);
-	font-weight: 600;
-	line-height: 1.05;
-	letter-spacing: -0.02em;
+	font-size: clamp(2.2rem, 8vw, 3.5rem);
+	font-weight: 700;
+	line-height: 1.1;
+	letter-spacing: -0.01em;
 	text-wrap: balance;
-	color: color-mix(in srgb, var(--text) 84%, var(--fill) 16%);
-	text-shadow: var(--text-shadow);
+	color: var(--text);
+	text-shadow: none;
 	transition: color 0.5s ease;
 }
 
 .countdown {
-	font-size: clamp(1rem, 4vw, 1.25rem);
-	color: color-mix(in srgb, var(--subtle) 78%, var(--fill) 22%);
+	font-size: clamp(0.95rem, 3vw, 1.1rem);
+	font-weight: 400;
+	color: rgba(255, 255, 255, 0.8);
 	text-wrap: pretty;
-	text-shadow: var(--text-shadow);
+	text-shadow: none;
 	transition: color 0.5s ease;
 }
 
@@ -136,7 +160,7 @@ body.has-wallpaper::before {
 .bar {
 	width: 100%;
 	height: 14px;
-	margin-top: 1rem;
+	margin-top: 0.5rem;
 	border-radius: 999px;
 	background:
 		repeating-linear-gradient(
