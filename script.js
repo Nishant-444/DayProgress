@@ -22,6 +22,12 @@ function pluralize(value, unit) {
 	return `${value} ${unit}${value === 1 ? "" : "s"}`;
 }
 
+function formatRailwayTime(date) {
+	const hours = String(date.getHours()).padStart(2, "0");
+	const minutes = String(date.getMinutes()).padStart(2, "0");
+	return `${hours}:${minutes}`;
+}
+
 function updateTime() {
 	const now = new Date();
 
@@ -35,9 +41,8 @@ function updateTime() {
 	const elapsedMs = now - startOfDay;
 	const remainingMs = endOfDay - now;
 
-	// Percent left, 1 decimal place.
-	const percentLeft = (remainingMs / dayMs) * 100;
-	percentEl.textContent = `${percentLeft.toFixed(1)}% left today`;
+	// Show the current time in 24-hour railway format.
+	percentEl.textContent = formatRailwayTime(now);
 
 	// Countdown subtitle.
 	const totalSeconds = Math.floor(remainingMs / 1000);
@@ -472,7 +477,21 @@ async function loadWallpaper() {
 		document.body.style.backgroundSize = "cover";
 		document.body.style.backgroundPosition = "center";
 		starfieldEl.style.display = "none";
+		// Run extractor to compute text/fill colors (async). After extractor
+		// completes we override the image filter vars so the wallpaper stays
+		// vivid while keeping extractor-chosen `--text` and `--fill`.
 		extractAndApplyColors(dataUrl);
+		setTimeout(() => {
+			try {
+				const root = document.documentElement;
+				root.style.setProperty("--img-brightness", "1");
+				root.style.setProperty("--img-contrast", "1");
+				root.style.setProperty("--img-saturate", "1");
+				root.style.setProperty("--scrim", "rgba(0,0,0,0.25)");
+			} catch (e) {
+				// ignore
+			}
+		}, 300);
 		await setSetting("wallpaperCursor", (i + 1) % idx.length);
 	} catch (err) {
 		console.error("loadWallpaper failed", err);

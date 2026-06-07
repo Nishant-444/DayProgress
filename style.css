@@ -1,216 +1,254 @@
 :root {
-  --bg: #0c0c0c;
-  --text: #f4f4f5;
-  --subtle: #a1a1aa;
-  --fill: #34d399;
-  --track: rgba(255, 255, 255, 0.14);
-  --scrim: rgba(0, 0, 0, 0);
-  /* Automatic image adjustments for clarity. */
-  --img-brightness: 1;
-  --img-contrast: 1;
-  --img-saturate: 1;
-  /* Text legibility shadow, set per-wallpaper. */
-  --text-shadow: none;
+	--bg: #0c0c0c;
+	--text: #f4f4f5;
+	--subtle: #a1a1aa;
+	--fill: #34d399;
+	--track: rgba(255, 255, 255, 0.14);
+	--scrim: rgba(0, 0, 0, 0.34);
+	/* Automatic image adjustments for clarity. */
+	--img-brightness: 1;
+	--img-contrast: 1;
+	--img-saturate: 1;
+	/* Text legibility shadow, set per-wallpaper. */
+	--text-shadow: none;
 }
 
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
 }
 
 html {
-  background: var(--bg);
+	background: var(--bg);
 }
 
 body {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg);
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center;
-  color: var(--text);
-  font-family: Consolas, "SF Mono", Menlo, Monaco, "Courier New", monospace;
-  overflow: hidden;
-  transition: color 0.5s ease;
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--bg);
+	background-repeat: no-repeat;
+	background-size: cover;
+	background-position: center;
+	color: var(--text);
+	font-family: Consolas, "SF Mono", Menlo, Monaco, "Courier New", monospace;
+	overflow: hidden;
+	transition: color 0.5s ease;
 }
 
 /* Wallpaper lives on a pseudo element so filters never touch the UI. */
 body.has-wallpaper {
-  background-image: none;
+	background-image: none;
 }
 
 body.has-wallpaper::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background-image: var(--wallpaper);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  filter: brightness(var(--img-brightness)) contrast(var(--img-contrast))
-    saturate(var(--img-saturate));
-  transition: filter 0.5s ease;
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	background-image: var(--wallpaper);
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	filter: brightness(var(--img-brightness)) contrast(var(--img-contrast))
+		saturate(var(--img-saturate));
+	transition: filter 0.5s ease;
 }
 
 /* Adaptive scrim sits between wallpaper and content for contrast. */
 .scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: var(--scrim);
-  transition: background 0.5s ease;
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	background: var(--scrim);
+	transition: background 0.5s ease;
 }
 
 /* Starfield */
 .starfield {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
 }
 
 .star {
-  position: absolute;
-  border-radius: 50%;
-  background: var(--text);
+	position: absolute;
+	border-radius: 50%;
+	background: var(--text);
 }
 
 .big-star {
-  width: 3px;
-  height: 3px;
-  opacity: 0.85;
+	width: 3px;
+	height: 3px;
+	opacity: 0.85;
 }
 
 .star.regular {
-  width: 2px;
-  height: 2px;
-  opacity: 0.5;
+	width: 2px;
+	height: 2px;
+	opacity: 0.5;
 }
 
 .small-star {
-  width: 1px;
-  height: 1px;
-  opacity: 0.25;
+	width: 1px;
+	height: 1px;
+	opacity: 0.25;
 }
 
 /* Content */
 .content {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 900px;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 1.5rem;
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	max-width: 900px;
+	padding: 2rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 1.5rem;
 }
 
 .percent {
-  font-size: clamp(2.5rem, 10vw, 6rem);
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  text-wrap: balance;
-  text-shadow: var(--text-shadow);
+	font-size: clamp(2.5rem, 10vw, 6rem);
+	font-weight: 600;
+	line-height: 1.05;
+	letter-spacing: -0.02em;
+	text-wrap: balance;
+	color: color-mix(in srgb, var(--text) 84%, var(--fill) 16%);
+	text-shadow: var(--text-shadow);
+	transition: color 0.5s ease;
 }
 
 .countdown {
-  font-size: clamp(1rem, 4vw, 1.25rem);
-  color: var(--subtle);
-  text-wrap: pretty;
-  text-shadow: var(--text-shadow);
-  transition: color 0.5s ease;
+	font-size: clamp(1rem, 4vw, 1.25rem);
+	color: color-mix(in srgb, var(--subtle) 78%, var(--fill) 22%);
+	text-wrap: pretty;
+	text-shadow: var(--text-shadow);
+	transition: color 0.5s ease;
 }
 
-/* Single pill progress bar */
+/* Day progress rail */
 .bar {
-  width: 100%;
-  height: 18px;
-  margin-top: 1rem;
-  border-radius: 999px;
-  background: var(--track);
-  overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-  transition: background 0.5s ease;
+	width: 100%;
+	height: 14px;
+	margin-top: 1rem;
+	border-radius: 999px;
+	background:
+		repeating-linear-gradient(
+			90deg,
+			transparent 0,
+			transparent 14px,
+			rgba(255, 255, 255, 0.06) 14px,
+			rgba(255, 255, 255, 0.06) 15px
+		),
+		var(--track);
+	box-shadow:
+		inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+		0 8px 24px rgba(0, 0, 0, 0.12);
+	overflow: visible;
+	transition: background 0.5s ease;
 }
 
 .bar-fill {
-  height: 100%;
-  width: 0%;
-  border-radius: 999px;
-  background: var(--fill);
-  transition: width 0.5s linear, background 0.5s ease;
+	position: relative;
+	height: 100%;
+	width: 0%;
+	border-radius: 999px;
+	background: linear-gradient(
+		90deg,
+		color-mix(in srgb, var(--fill) 82%, white 18%),
+		var(--fill)
+	);
+	box-shadow:
+		0 0 18px color-mix(in srgb, var(--fill) 60%, transparent),
+		0 0 2px rgba(255, 255, 255, 0.2);
+	transition:
+		width 0.5s linear,
+		background 0.5s ease;
+}
+
+.bar-fill::after {
+	content: "";
+	position: absolute;
+	right: -7px;
+	top: 50%;
+	width: 14px;
+	height: 14px;
+	transform: translateY(-50%);
+	border-radius: 50%;
+	background: var(--fill);
+	box-shadow:
+		0 0 0 3px rgba(255, 255, 255, 0.12),
+		0 0 16px color-mix(in srgb, var(--fill) 72%, transparent);
+	pointer-events: none;
 }
 
 /* Gear button (bottom-left) */
 .gear-btn {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  font-size: 1.2rem;
-  opacity: 0.4;
-  transition: opacity 0.2s ease;
-  background: none;
-  border: none;
-  cursor: pointer;
-  z-index: 20;
-  color: var(--text);
-  line-height: 1;
-  text-shadow: var(--text-shadow);
+	position: fixed;
+	bottom: 20px;
+	left: 20px;
+	font-size: 1.2rem;
+	opacity: 0.4;
+	transition: opacity 0.2s ease;
+	background: none;
+	border: none;
+	cursor: pointer;
+	z-index: 20;
+	color: var(--text);
+	line-height: 1;
+	text-shadow: var(--text-shadow);
 }
 
 .gear-btn:hover,
 .gear-btn[aria-expanded="true"] {
-  opacity: 0.95;
+	opacity: 0.95;
 }
 
 /* Settings menu */
 .menu {
-  position: fixed;
-  bottom: 56px;
-  left: 20px;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  min-width: 180px;
-  padding: 6px;
-  border-radius: 10px;
-  background: rgba(20, 20, 22, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+	position: fixed;
+	bottom: 56px;
+	left: 20px;
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+	min-width: 180px;
+	padding: 6px;
+	border-radius: 10px;
+	background: rgba(20, 20, 22, 0.92);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(8px);
+	box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
 }
 
 .menu[hidden] {
-  display: none;
+	display: none;
 }
 
 .menu-item {
-  text-align: left;
-  padding: 9px 12px;
-  border: none;
-  border-radius: 6px;
-  background: none;
-  color: #f4f4f5;
-  font-family: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background 0.15s ease;
+	text-align: left;
+	padding: 9px 12px;
+	border: none;
+	border-radius: 6px;
+	background: none;
+	color: #f4f4f5;
+	font-family: inherit;
+	font-size: 0.9rem;
+	cursor: pointer;
+	transition: background 0.15s ease;
 }
 
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+	background: rgba(255, 255, 255, 0.08);
 }
 
 .menu-item:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+	opacity: 0.4;
+	cursor: not-allowed;
 }
