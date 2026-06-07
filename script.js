@@ -336,6 +336,10 @@ function setWallpaper(imageUrl) {
 function clearWallpaperUI() {
 	document.body.classList.remove("has-wallpaper");
 	document.documentElement.style.removeProperty("--wallpaper");
+	// Clear any inline background applied by the new wallpaper system
+	document.body.style.backgroundImage = "";
+	document.body.style.backgroundSize = "";
+	document.body.style.backgroundPosition = "";
 	const root = document.documentElement;
 	root.style.setProperty("--text", "#f4f4f5");
 	root.style.setProperty("--subtle", "#a1a1aa");
@@ -359,61 +363,160 @@ function isImageFile(name) {
 	const lower = name.toLowerCase();
 	return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
+/* ============================================================
+   New wallpaper system
+   - Stores resized dataUrls in `wallpapers` setting
+   - Tracks next index in `wallpaperCursor`
+   - Optionally stores `folderHandle` (Chrome/Edge)
+   ============================================================ */
 
-async function loadFromFolder(folderHandle) {
-	const permission = await folderHandle.requestPermission({ mode: "read" });
-	if (permission !== "granted") {
-		await deleteSetting("folderHandle");
-		return false;
+// Small wrapper in case older code expects this name.
+function extractAndApplyColors(imageUrl) {
+	try {
+		applyAutoClarity(imageUrl);
+	} catch (err) {
+		console.error("extractAndApplyColors failed", err);
 	}
+}
 
-	const imageFiles = [];
-	for await (const entry of folderHandle.values()) {
-		if (entry.kind === "file" && isImageFile(entry.name)) {
-			imageFiles.push(entry);
+async function resizeImage(file) {
+	try {
+		if (!file || !file.type || !file.type.startsWith("image/")) return null;
+
+		const img = await new Promise((resolve, reject) => {
+			const url = URL.createObjectURL(file);
+			const i = new Image();
+			i.onload = () => {
+				URL.revokeObjectURL(url);
+				resolve(i);
+			};
+			i.onerror = (e) => {
+				URL.revokeObjectURL(url);
+				reject(e);
+			};
+			i.src = url;
+		});
+
+		const canvas = document.createElement("canvas");
+		let { width, height } = img;
+		if (width > 1920) {
+			const ratio = 1920 / width;
+			width = 1920;
+			height = Math.round(height * ratio);
 		}
+		canvas.width = width;
+		canvas.height = height;
+		const ctx = canvas.getContext("2d");
+		ctx.drawImage(img, 0, 0, width, height);
+		const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+		return dataUrl;
+	} catch (err) {
+		console.error("resizeImage failed for file", file && file.name, err);
+		return null;
 	}
+}
 
-	if (imageFiles.length === 0) {
-		alert("No images found in this folder");
-		await deleteSetting("folderHandle");
-		return false;
+function showProgress(text) {
+	let el = document.getElementById("progress-toast");
+	if (!el) {
+		el = document.createElement("div");
+		el.id = "progress-toast";
+		el.style.position = "fixed";
+		el.style.bottom = "60px";
+		el.style.left = "50%";
+		el.style.transform = "translateX(-50%)";
+		el.style.background = "rgba(20,20,22,0.95)";
+		el.style.color = "#fff";
+		el.style.padding = "8px 16px";
+		el.style.borderRadius = "20px";
+		el.style.fontSize = "0.85rem";
+		el.style.zIndex = "9999";
+		document.body.appendChild(el);
 	}
+	el.textContent = text;
+}
 
-	imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+function hideProgress() {
+	const el = document.getElementById("progress-toast");
+	if (el) el.remove();
+}
 
-	const cursor = (await getSetting("wallpaperCursor")) ?? 0;
-	const index = cursor % imageFiles.length;
+async function addWallpapers(files) {
+	try {
+		if (!files || !files.length) return;
+		if (files.length > 500) {
+			const ok = confirm(
+				`You're adding ${files.length} images. This may take a moment. Continue?`,
+			);
+			if (!ok) return;
+		}
 
-	const file = await imageFiles[index].getFile();
-	const imageUrl = URL.createObjectURL(file);
-	setWallpaper(imageUrl);
+		showProgress(`Saving ${files.length} images...`);
 
-	await setSetting("wallpaperCursor", (cursor + 1) % imageFiles.length);
-	return true;
+		const images = [];
+		let saved = 0;
+		for (let i = 0; i < files.length; i++) {
+			const file = files[i];
+			if (!file || !file.type || !file.type.startsWith("image/")) continue;
+			const dataUrl = await resizeImage(file);
+			if (!dataUrl) continue;
+			const obj = { id: Date.now() + Math.random(), dataUrl, name: file.name };
+			images.push(obj);
+			saved++;
+			showProgress(`Saving ${saved} / ${files.length}...`);
+		}
+
+		const existing = (await getSetting("wallpapers")) || [];
+		const combined = [...existing, ...images];
+		await setSetting("wallpapers", combined);
+		await setSetting("wallpaperCursor", 0);
+		hideProgress();
+		location.reload();
+	} catch (err) {
+		console.error("addWallpapers failed", err);
+		hideProgress();
+	}
 }
 
 async function loadWallpaper() {
 	try {
-		// A folder handle takes priority (rotates each load).
-		const folderHandle = await getSetting("folderHandle");
-		if (folderHandle && supportsFolderPicker) {
-			const ok = await loadFromFolder(folderHandle);
-			if (ok) return;
-		}
-
-		// Otherwise fall back to a stored single uploaded image.
-		const blob = await getSetting("imageBlob");
-		if (blob) {
-			const imageUrl = URL.createObjectURL(blob);
-			setWallpaper(imageUrl);
+		const wallpapers = (await getSetting("wallpapers")) || [];
+		if (!wallpapers || wallpapers.length === 0) {
+			renderStarfield();
 			return;
 		}
 
-		clearWallpaperUI();
+		const cursor = (await getSetting("wallpaperCursor")) ?? 0;
+		const index =
+			((cursor % wallpapers.length) + wallpapers.length) % wallpapers.length;
+		const dataUrl = wallpapers[index] && wallpapers[index].dataUrl;
+		if (!dataUrl) {
+			renderStarfield();
+			return;
+		}
+
+		document.body.style.backgroundImage = `url("${dataUrl}")`;
+		document.body.style.backgroundSize = "cover";
+		document.body.style.backgroundPosition = "center";
+		starfieldEl.style.display = "none";
+		extractAndApplyColors(dataUrl);
+		await setSetting("wallpaperCursor", (index + 1) % wallpapers.length);
 	} catch (err) {
 		console.error("loadWallpaper failed", err);
-		clearWallpaperUI();
+		renderStarfield();
+	}
+}
+
+async function removeWallpaper() {
+	try {
+		const ok = confirm("Remove all wallpapers?");
+		if (!ok) return;
+		await deleteSetting("wallpapers");
+		await deleteSetting("wallpaperCursor");
+		await deleteSetting("folderHandle");
+		location.reload();
+	} catch (err) {
+		console.error("removeWallpaper failed", err);
 	}
 }
 
@@ -425,6 +528,7 @@ const supportsFolderPicker = typeof window.showDirectoryPicker === "function";
 function openMenu() {
 	menuEl.hidden = false;
 	gearBtn.setAttribute("aria-expanded", "true");
+	refreshRemoveItemState();
 }
 
 function closeMenu() {
@@ -437,64 +541,130 @@ function toggleMenu() {
 	else closeMenu();
 }
 
-async function updateRemoveItem(hasWallpaper) {
-	removeItem.disabled = !hasWallpaper;
+async function refreshRemoveItemState() {
+	try {
+		const wallpapers = (await getSetting("wallpapers")) || [];
+		const has = wallpapers && wallpapers.length > 0;
+		removeItem.disabled = !has;
+		if (!has) {
+			removeItem.style.opacity = "0.4";
+			removeItem.style.pointerEvents = "none";
+		} else {
+			removeItem.style.opacity = "1";
+			removeItem.style.pointerEvents = "auto";
+		}
+	} catch (err) {
+		console.error("refreshRemoveItemState failed", err);
+		removeItem.disabled = true;
+	}
 }
 
-/* Upload a single image file (works in all browsers). */
+/* Upload images path */
 uploadItem.addEventListener("click", () => {
 	closeMenu();
-	fileInput.click();
+	const inp = document.getElementById("wallpaper-input");
+	if (inp) inp.click();
 });
 
-fileInput.addEventListener("change", async () => {
-	const file = fileInput.files && fileInput.files[0];
-	fileInput.value = ""; // allow re-selecting the same file later
-	if (!file) return;
+document
+	.getElementById("wallpaper-input")
+	.addEventListener("change", async (e) => {
+		const files = Array.from(e.target.files || []);
+		e.target.value = "";
+		await addWallpapers(files);
+	});
 
-	// Switching to an uploaded image: drop any stored folder.
-	await deleteSetting("folderHandle");
-	await deleteSetting("wallpaperCursor");
-	await setSetting("imageBlob", file);
-
-	const imageUrl = URL.createObjectURL(file);
-	setWallpaper(imageUrl);
-});
-
-/* Choose a folder (Chromium only). */
-async function chooseFolder() {
+/* Folder picker: Chrome/Edge uses showDirectoryPicker, otherwise fallback to webkitdirectory input */
+async function chooseFolderPicker() {
 	try {
 		const handle = await window.showDirectoryPicker({ mode: "read" });
-		await deleteSetting("imageBlob");
+		if (!handle) return;
 		await setSetting("folderHandle", handle);
-		await setSetting("wallpaperCursor", 0);
-		closeMenu();
-		location.reload();
+
+		// Collect image files from handle
+		const files = [];
+		for await (const entry of handle.values()) {
+			if (entry.kind === "file" && isImageFile(entry.name)) {
+				try {
+					const f = await entry.getFile();
+					files.push(f);
+				} catch (err) {
+					console.error("failed to get file from entry", err);
+				}
+			}
+		}
+
+		if (files.length === 0) {
+			// silently clear stored handle if empty
+			await deleteSetting("folderHandle");
+			return;
+		}
+
+		files.sort((a, b) => a.name.localeCompare(b.name));
+		await addWallpapers(files);
 	} catch (err) {
-		// User cancelled the picker — do nothing.
+		if (err && err.name === "AbortError") return;
+		console.error("chooseFolderPicker failed", err);
 	}
 }
 
 if (supportsFolderPicker) {
-	folderItem.addEventListener("click", chooseFolder);
+	folderItem.addEventListener("click", () => {
+		closeMenu();
+		chooseFolderPicker();
+	});
 } else {
-	folderItem.disabled = true;
-	folderItem.textContent = "Choose folder (Chromium only)";
+	// Fallback to webkitdirectory input
+	folderItem.addEventListener("click", () => {
+		closeMenu();
+		const inp = document.getElementById("folder-input");
+		if (inp) inp.click();
+	});
+	document
+		.getElementById("folder-input")
+		.addEventListener("change", async (e) => {
+			const files = Array.from(e.target.files || []).filter(
+				(f) => f && f.type && f.type.startsWith("image/"),
+			);
+			e.target.value = "";
+			await addWallpapers(files);
+		});
 }
 
-/* Remove the current wallpaper. */
+/* Remove the current wallpaper (long-press or menu) */
 removeItem.addEventListener("click", async () => {
-	await deleteSetting("folderHandle");
-	await deleteSetting("wallpaperCursor");
-	await deleteSetting("imageBlob");
 	closeMenu();
-	clearWallpaperUI();
+	await removeWallpaper();
 });
 
-/* Gear toggles the menu. */
-gearBtn.addEventListener("click", (e) => {
-	e.stopPropagation();
-	toggleMenu();
+/* Gear interactions: click opens menu, long-press (500ms) or right-click triggers remove confirm */
+let gearPressTimer = null;
+gearBtn.addEventListener("mousedown", (e) => {
+	// start long-press timer
+	gearPressTimer = setTimeout(async () => {
+		gearPressTimer = null;
+		await removeWallpaper();
+	}, 500);
+});
+gearBtn.addEventListener("mouseup", (e) => {
+	if (gearPressTimer) {
+		clearTimeout(gearPressTimer);
+		gearPressTimer = null;
+		// treat as click
+		toggleMenu();
+		// refresh removeItem state when opening
+		if (!menuEl.hidden) refreshRemoveItemState();
+	}
+});
+gearBtn.addEventListener("mouseleave", () => {
+	if (gearPressTimer) {
+		clearTimeout(gearPressTimer);
+		gearPressTimer = null;
+	}
+});
+gearBtn.addEventListener("contextmenu", async (e) => {
+	e.preventDefault();
+	await removeWallpaper();
 });
 
 /* Click outside / Escape closes the menu. */
