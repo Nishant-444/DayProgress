@@ -1,18 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Day Progress</title>
-		<link rel="stylesheet" href="popup.css" />
-	</head>
-	<body>
-		<div id="starfield"></div>
-		<div class="content">
-			<h1 id="percentage-text"></h1>
-			<p id="time-left-text"></p>
-			<div id="progress-grid"></div>
-		</div>
-		<script src="script.js"></script>
-	</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c0c0c" />
+    <meta
+      name="description"
+      content="Day Progress — a live look at how much of the current day is left, with custom local wallpapers."
+    />
+    <title>Day Progress</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="starfield" class="starfield" aria-hidden="true"></div>
+    <div id="scrim" class="scrim" aria-hidden="true"></div>
+
+    <main class="content">
+      <h1 id="percent" class="percent">100.0% left today</h1>
+      <p id="countdown" class="countdown">24 hours left today</p>
+
+      <div
+        id="bar"
+        class="bar"
+        role="progressbar"
+        aria-label="Progress through the day"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+      >
+        <div id="barFill" class="bar-fill"></div>
+      </div>
+    </main>
+
+    <button
+      id="gearBtn"
+      class="gear-btn"
+      type="button"
+      aria-label="Wallpaper settings"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      &#9881;
+    </button>
+
+    <div id="menu" class="menu" role="menu" hidden>
+      <button id="uploadItem" class="menu-item" type="button" role="menuitem">
+        Upload image
+      </button>
+      <button id="folderItem" class="menu-item" type="button" role="menuitem">
+        Choose folder
+      </button>
+      <button id="removeItem" class="menu-item" type="button" role="menuitem">
+        Remove wallpaper
+      </button>
+    </div>
+
+    <input
+      id="fileInput"
+      type="file"
+      accept="image/*"
+      hidden
+      aria-hidden="true"
+    />
+
+    <script src="script.js"></script>
+  </body>
 </html>
