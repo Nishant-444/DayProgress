@@ -9,13 +9,11 @@ const countdownEl = document.getElementById("countdown");
 const barEl = document.getElementById("bar");
 const barFillEl = document.getElementById("barFill");
 const starfieldEl = document.getElementById("starfield");
-const scrimEl = document.getElementById("scrim");
 const gearBtn = document.getElementById("gearBtn");
 const menuEl = document.getElementById("menu");
 const uploadItem = document.getElementById("uploadItem");
 const folderItem = document.getElementById("folderItem");
 const removeItem = document.getElementById("removeItem");
-const fileInput = document.getElementById("fileInput");
 
 /* ============================================================
    Live time / countdown + single pill bar
@@ -322,37 +320,8 @@ function applyAutoClarity(imageUrl) {
 /* ============================================================
    Apply a wallpaper image URL to the page
    ============================================================ */
-function setWallpaper(imageUrl) {
-	starfieldEl.style.display = "none";
-	document.body.classList.add("has-wallpaper");
-	document.documentElement.style.setProperty(
-		"--wallpaper",
-		`url("${imageUrl}")`,
-	);
-	applyAutoClarity(imageUrl);
-	updateRemoveItem(true);
-}
-
-function clearWallpaperUI() {
-	document.body.classList.remove("has-wallpaper");
-	document.documentElement.style.removeProperty("--wallpaper");
-	// Clear any inline background applied by the new wallpaper system
-	document.body.style.backgroundImage = "";
-	document.body.style.backgroundSize = "";
-	document.body.style.backgroundPosition = "";
-	const root = document.documentElement;
-	root.style.setProperty("--text", "#f4f4f5");
-	root.style.setProperty("--subtle", "#a1a1aa");
-	root.style.setProperty("--fill", "#34d399");
-	root.style.setProperty("--track", "rgba(255,255,255,0.14)");
-	root.style.setProperty("--scrim", "rgba(0,0,0,0)");
-	root.style.setProperty("--text-shadow", "none");
-	root.style.setProperty("--img-brightness", "1");
-	root.style.setProperty("--img-contrast", "1");
-	root.style.setProperty("--img-saturate", "1");
-	renderStarfield();
-	updateRemoveItem(false);
-}
+// setWallpaper() and clearWallpaperUI() removed — storage and display are
+// handled by the new wallpaper system. These functions were unused.
 
 /* ============================================================
    Wallpaper loader (folder handle OR uploaded image blob)
@@ -466,9 +435,13 @@ async function addWallpapers(files) {
 			showProgress(`Saving ${saved} / ${files.length}...`);
 		}
 
-		const existing = (await getSetting("wallpapers")) || [];
-		const combined = [...existing, ...images];
-		await setSetting("wallpapers", combined);
+		// Store each wallpaper individually to avoid single large value quota issues.
+		const index = (await getSetting("wallpapers:index")) || [];
+		for (const img of images) {
+			await setSetting(`wallpaper:${img.id}`, img.dataUrl);
+			index.push({ id: img.id, name: img.name });
+		}
+		await setSetting("wallpapers:index", index);
 		await setSetting("wallpaperCursor", 0);
 		hideProgress();
 		location.reload();
@@ -480,16 +453,16 @@ async function addWallpapers(files) {
 
 async function loadWallpaper() {
 	try {
-		const wallpapers = (await getSetting("wallpapers")) || [];
-		if (!wallpapers || wallpapers.length === 0) {
+		const idx = (await getSetting("wallpapers:index")) || [];
+		if (!idx || idx.length === 0) {
 			renderStarfield();
 			return;
 		}
 
 		const cursor = (await getSetting("wallpaperCursor")) ?? 0;
-		const index =
-			((cursor % wallpapers.length) + wallpapers.length) % wallpapers.length;
-		const dataUrl = wallpapers[index] && wallpapers[index].dataUrl;
+		const i = ((cursor % idx.length) + idx.length) % idx.length;
+		const entry = idx[i];
+		const dataUrl = await getSetting(`wallpaper:${entry.id}`);
 		if (!dataUrl) {
 			renderStarfield();
 			return;
@@ -500,7 +473,7 @@ async function loadWallpaper() {
 		document.body.style.backgroundPosition = "center";
 		starfieldEl.style.display = "none";
 		extractAndApplyColors(dataUrl);
-		await setSetting("wallpaperCursor", (index + 1) % wallpapers.length);
+		await setSetting("wallpaperCursor", (i + 1) % idx.length);
 	} catch (err) {
 		console.error("loadWallpaper failed", err);
 		renderStarfield();
@@ -511,7 +484,16 @@ async function removeWallpaper() {
 	try {
 		const ok = confirm("Remove all wallpapers?");
 		if (!ok) return;
-		await deleteSetting("wallpapers");
+		// Delete individual wallpaper entries and the index
+		const idx = (await getSetting("wallpapers:index")) || [];
+		for (const entry of idx) {
+			try {
+				await deleteSetting(`wallpaper:${entry.id}`);
+			} catch (err) {
+				console.error("failed to delete wallpaper key", entry.id, err);
+			}
+		}
+		await deleteSetting("wallpapers:index");
 		await deleteSetting("wallpaperCursor");
 		await deleteSetting("folderHandle");
 		location.reload();
@@ -524,6 +506,15 @@ async function removeWallpaper() {
    Settings menu + actions
    ============================================================ */
 const supportsFolderPicker = typeof window.showDirectoryPicker === "function";
+
+if (!supportsFolderPicker) {
+	// Hide the folder item when the File System Access API isn't available
+	try {
+		folderItem.style.display = "none";
+	} catch (e) {
+		// ignore
+	}
+}
 
 function openMenu() {
 	menuEl.hidden = false;
@@ -543,8 +534,8 @@ function toggleMenu() {
 
 async function refreshRemoveItemState() {
 	try {
-		const wallpapers = (await getSetting("wallpapers")) || [];
-		const has = wallpapers && wallpapers.length > 0;
+		const idx = (await getSetting("wallpapers:index")) || [];
+		const has = idx && idx.length > 0;
 		removeItem.disabled = !has;
 		if (!has) {
 			removeItem.style.opacity = "0.4";
